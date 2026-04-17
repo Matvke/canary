@@ -43,6 +43,10 @@
             padding: 0 10px;
             font-size: 14px;
         }
+        input[type="file"] {
+            height: auto;
+            padding: 8px;
+        }
         button {
             margin-top: 8px;
             height: 42px;
@@ -144,7 +148,7 @@
                 <section class="block">
                     <h2>Текущая инспекция</h2>
                     <p class="hint">Нельзя менять устройство вручную: отчет отправится только для следующего шага плана.</p>
-                    <form method="post" action="/api/v1/inspections/">
+                    <form method="post" action="/api/v1/inspections/" enctype="multipart/form-data">
                         <input type="hidden" name="inspection_plan_id" value="{{ plan.id }}">
                         <input type="hidden" name="equipment_id" value="{{ next_step.equipment.id }}">
                         <input type="hidden" name="employee_id" value="{{ employee_id }}">
@@ -172,6 +176,10 @@
                         <label>
                             Photo URL (optional)
                             <input type="url" name="photo_url" placeholder="https://example.com/photo.jpg">
+                        </label>
+                        <label>
+                            Photo file (optional)
+                            <input type="file" name="photo" accept="image/*">
                         </label>
                         <button type="submit">Отправить отчет по текущему шагу</button>
                     </form>

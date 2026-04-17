@@ -2,11 +2,14 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+APP_DIR = Path(__file__).resolve().parents[1]
+DEFAULT_DB_PATH = (APP_DIR / "factory_reports.db").resolve()
+
 
 class Settings(BaseSettings):
     app_name: str = "Factory Inspection Reporting API"
     api_v1_prefix: str = "/api/v1"
-    database_url: str = "sqlite+aiosqlite:///./factory_reports.db"
+    database_url: str = f"sqlite+aiosqlite:///{DEFAULT_DB_PATH.as_posix()}"
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -28,7 +31,7 @@ class Settings(BaseSettings):
 
         db_path = Path(raw_path)
         if not db_path.is_absolute():
-            db_path = (Path.cwd() / db_path).resolve()
+            db_path = (APP_DIR / db_path).resolve()
         return db_path
 
 
