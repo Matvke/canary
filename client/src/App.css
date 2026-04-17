@@ -1,1 +1,85 @@
-@import "tailwindcss";
+.grid-pattern {
+  background-image:
+    linear-gradient(rgba(82, 58, 31, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(82, 58, 31, 0.06) 1px, transparent 1px);
+  background-position: center;
+  background-size: 24px 24px;
+}
+
+.route-card {
+  transition:
+    transform 140ms ease,
+    box-shadow 140ms ease,
+    border-color 140ms ease;
+}
+
+.route-card:active {
+  transform: translateY(1px);
+}
+
+.scanner-shell {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.scanner-shell::before {
+  content: '';
+  position: absolute;
+  inset: -40%;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.2), transparent 54%);
+  animation: scanner-glow 5s linear infinite;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.scanner-shell > * {
+  position: relative;
+  z-index: 1;
+}
+
+.scanner-frame::after {
+  content: '';
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 16%;
+  height: 2px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, transparent, rgba(252, 211, 77, 0.95), transparent);
+  box-shadow: 0 0 16px rgba(252, 211, 77, 0.9);
+  animation: scanner-line 2.1s ease-in-out infinite;
+}
+
+@keyframes scanner-line {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(12.5rem);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes scanner-glow {
+  0% {
+    transform: translate3d(-12%, -10%, 0);
+  }
+  50% {
+    transform: translate3d(12%, 8%, 0);
+  }
+  100% {
+    transform: translate3d(-12%, -10%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-card,
+  .scanner-shell::before,
+  .scanner-frame::after {
+    animation: none;
+    transition: none;
+  }
+}
