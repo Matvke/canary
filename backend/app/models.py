@@ -115,3 +115,36 @@ class InspectionPlanAssignment(SQLModel, table=True):
 
     plan_id: int = Field(foreign_key="inspection_plans.id", primary_key=True)
     employee_id: int = Field(foreign_key="employees.id", index=True)
+
+
+class UploadedPhoto(SQLModel, table=True):
+    __tablename__ = "uploaded_photos"
+
+    id: int | None = Field(default=None, primary_key=True)
+    idempotency_key: str = Field(index=True, unique=True)
+    photo_id: str | None = None
+    draft_id: str
+    equipment_id: int = Field(foreign_key="equipment.id", index=True)
+    captured_at: datetime | None = None
+    filename: str
+    url: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class InspectionResult(SQLModel, table=True):
+    __tablename__ = "inspection_results"
+
+    id: int | None = Field(default=None, primary_key=True)
+    local_id: str = Field(index=True, unique=True)
+    equipment_id: int = Field(foreign_key="equipment.id", index=True)
+    employee_id: int = Field(foreign_key="employees.id", index=True)
+    inspector_name: str
+    status: str
+    qr_code: str
+    scanned_at: datetime | None = None
+    occurred_at: datetime
+    checklist_json: str
+    photo_ids_json: str
+    photo_urls_json: str
+    inspection_id: int | None = Field(default=None, foreign_key="inspections.id")
+    synced_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
