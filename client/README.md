@@ -1,73 +1,73 @@
-# React + TypeScript + Vite
+# Canary Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Мобильный PWA-клиент для обходчиков. Клиент работает offline-first, хранит план/черновики/фото в IndexedDB и синхронизирует результаты через REST API автоматически.
 
-Currently, two official plugins are available:
+## Быстрый запуск через Docker
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Сборка образа из директории `client`:
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+docker build -t canary-client .
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Запуск против backend на этой же машине:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+```bash
+docker run --rm -p 8080:8080 \
+  -e API_BASE_URL=http://localhost:8000 \
+  canary-client
+```
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Открыть приложение:
+
+```text
+http://localhost:8080
+```
+
+Если backend запущен в другом контейнере или на другом хосте, укажите URL, который доступен именно из браузера пользователя:
+
+```bash
+docker run --rm -p 8080:8080 \
+  -e API_BASE_URL=http://192.168.1.20:8000 \
+  canary-client
+```
+
+## Важные замечания для backend-разработчиков
+
+- `API_BASE_URL` задаётся на старте контейнера, пересобирать образ для смены backend URL не нужно.
+- Если `API_BASE_URL` пустой, запросы идут на тот же origin, где открыт frontend. Это удобно, если backend/reverse proxy отдаёт API и статику с одного домена.
+- Для тестирования камеры и QR на телефоне нужен secure context: `https` или `localhost`. При открытии с телефона по `http://<LAN-IP>:8080` браузер может запретить камеру.
+- Backend должен разрешить CORS для origin фронта, например `http://localhost:8080`, если API находится на другом origin.
+- PWA кэширует статику. После пересборки образа при странном поведении обновите страницу с bypass cache или очистите site data.
+
+## REST API, который ожидает клиент
+
+Клиент сначала пробует новые endpoints:
+
+```text
+GET  /inspection-plans/today
+POST /inspection-results
+POST /upload-photo
+```
+
+Для совместимости с текущим backend есть fallback на legacy endpoints:
+
+```text
+GET  /api/v1/inspection-plans/
+GET  /api/v1/equipment/:id
+POST /api/v1/inspections/
+```
+
+## Локальный запуск без Docker
+
+```bash
+npm install --legacy-peer-deps
+VITE_API_BASE_URL=http://localhost:8000 npm run dev
+```
+
+Проверки:
+
+```bash
+npm run lint
+npm run build
 ```

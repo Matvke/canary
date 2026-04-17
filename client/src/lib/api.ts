@@ -8,7 +8,12 @@ import type {
   RemotePlanBundle,
 } from '@/types'
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
+function getApiBase(): string {
+  const runtimeBase = window.__CANARY_CONFIG__?.API_BASE_URL
+  const buildBase = import.meta.env.VITE_API_BASE_URL
+
+  return (runtimeBase || buildBase || '').replace(/\/$/, '')
+}
 
 interface LegacyEquipment {
   id: number
@@ -24,7 +29,7 @@ interface LegacyPlan {
 }
 
 function buildUrl(path: string): string {
-  return `${API_BASE}${path}`
+  return `${getApiBase()}${path}`
 }
 
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {

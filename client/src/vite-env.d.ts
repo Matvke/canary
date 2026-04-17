@@ -62,6 +62,9 @@ declare global {
     SpeechRecognition?: SpeechRecognitionConstructor
     webkitSpeechRecognition?: SpeechRecognitionConstructor
     BarcodeDetector?: BarcodeDetectorConstructor
+    __CANARY_CONFIG__?: {
+      API_BASE_URL?: string
+    }
   }
 }
 
