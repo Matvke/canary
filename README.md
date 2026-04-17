@@ -47,15 +47,63 @@ docker compose up --build
 http://<LAN_IP>:8080
 ```
 
-Для камеры на телефоне всё равно нужен HTTPS или localhost. Для полноценной проверки QR с телефона используйте HTTPS-туннель до frontend.
+Для камеры на телефоне нужен HTTPS или localhost. Для полноценной проверки QR с телефона используйте HTTPS-туннель до frontend.
 
-Остановка:
+## HTTPS-туннель для проверки с телефона
+
+Камера в мобильных браузерах работает только в secure context: `https` или `localhost`. Так как на телефоне `localhost` указывает на сам телефон, для проверки QR с приложения, запущенного на ноутбуке, нужен HTTPS-туннель.
+
+Важно: если frontend открыт по `https`, API тоже должен быть доступен по `https`. Иначе браузер заблокирует запросы к `http://...` как mixed content. Для локальной проверки проще поднять два туннеля: один до frontend, второй до backend.
+
+### Пример через `cloudflared`:
+
+```bash
+brew install cloudflared
+docker compose up --build -d
+```
+
+В первом терминале запустите туннель до frontend:
+
+```bash
+cloudflared tunnel --url http://localhost:8080
+```
+
+Во втором терминале запустите туннель до backend:
+
+```bash
+cloudflared tunnel --url http://localhost:8000
+```
+
+Скопируйте оба выданных HTTPS URL и пересоздайте контейнеры с корректными переменными:
+
+```bash
+API_BASE_URL=https://<BACKEND_TUNNEL_HOST>/api/v1 \
+CORS_ORIGINS='["https://<FRONTEND_TUNNEL_HOST>"]' \
+docker compose up --build -d --force-recreate
+```
+
+После этого на телефоне открывайте:
+
+```text
+https://<FRONTEND_TUNNEL_HOST>
+```
+
+### Альтернатива через `ngrok`:
+
+```bash
+ngrok http 8080
+ngrok http 8000
+```
+
+Правило то же: в `API_BASE_URL` нужно указывать HTTPS URL backend-туннеля с суффиксом `/api/v1`, а в `CORS_ORIGINS` — HTTPS URL frontend-туннеля.
+
+## Остановка:
 
 ```bash
 docker compose down
 ```
 
-Остановка с удалением базы и загруженных фото:
+## Остановка с удалением базы и загруженных фото:
 
 ```bash
 docker compose down -v
