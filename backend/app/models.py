@@ -1,8 +1,6 @@
-from __future__ import annotations
-
 from datetime import datetime, timezone
 
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, relationship
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -21,14 +19,14 @@ class Equipment(SQLModel, table=True):
     description: str | None = None
     status: str = Field(default="operational")
 
-    inspections: list[Inspection] = Relationship(
+    inspections: Mapped[list["Inspection"]] = Relationship(
         sa_relationship=relationship(
             "Inspection",
             back_populates="equipment",
             cascade="all, delete-orphan",
         )
     )
-    inspection_plans: list[InspectionPlan] = Relationship(
+    inspection_plans: Mapped[list["InspectionPlan"]] = Relationship(
         sa_relationship=relationship(
             "InspectionPlan",
             back_populates="equipment_items",
@@ -44,7 +42,7 @@ class Employee(SQLModel, table=True):
     name: str
     role: str
 
-    inspections: list[Inspection] = Relationship(
+    inspections: Mapped[list["Inspection"]] = Relationship(
         sa_relationship=relationship(
             "Inspection",
             back_populates="employee",
@@ -66,10 +64,10 @@ class Inspection(SQLModel, table=True):
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     photo_url: str | None = None
 
-    equipment: Equipment = Relationship(
+    equipment: Mapped[Equipment] = Relationship(
         sa_relationship=relationship("Equipment", back_populates="inspections")
     )
-    employee: Employee = Relationship(
+    employee: Mapped[Employee] = Relationship(
         sa_relationship=relationship("Employee", back_populates="inspections")
     )
 
@@ -83,20 +81,16 @@ class InspectionPlan(SQLModel, table=True):
     score: int | None = None
     supervisor_follow_up: bool = Field(default=False)
 
-    equipment_items: list[Equipment] = Relationship(
-        sa_relationship=relationship(
-            "Equipment",
-            back_populates="inspection_plans",
-            secondary="inspection_plan_equipment",
-        )
+    equipment_items: Mapped[list["Equipment"]] = Relationship(
+        back_populates="inspection_plans",
+        link_model=InspectionPlanEquipmentLink,
     )
-    steps: list[InspectionPlanStep] = Relationship(
-        sa_relationship=relationship(
-            "InspectionPlanStep",
-            back_populates="plan",
-            cascade="all, delete-orphan",
-            order_by="InspectionPlanStep.step_order",
-        )
+    steps: Mapped[list["InspectionPlanStep"]] = Relationship(
+        back_populates="plan",
+        sa_relationship_kwargs={
+            "cascade": "all, delete-orphan",
+            "order_by": "InspectionPlanStep.step_order",
+        },
     )
 
 
@@ -108,12 +102,12 @@ class InspectionPlanStep(SQLModel, table=True):
     equipment_id: int = Field(foreign_key="equipment.id", index=True)
     step_order: int = Field(index=True, ge=1)
     completed_at: datetime | None = None
-    completed_inspection_id: int | None = Field(default=None, foreign_key="inspections.id")
-
-    plan: InspectionPlan = Relationship(
-        sa_relationship=relationship("InspectionPlan", back_populates="steps")
+    completed_inspection_id: int | None = Field(
+        default=None, foreign_key="inspections.id"
     )
-    equipment: Equipment = Relationship(sa_relationship=relationship("Equipment"))
+
+    plan: Mapped["InspectionPlan"] = Relationship(back_populates="steps")
+    equipment: Mapped["Equipment"] = Relationship()
 
 
 class InspectionPlanAssignment(SQLModel, table=True):
