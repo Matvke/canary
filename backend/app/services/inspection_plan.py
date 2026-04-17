@@ -6,7 +6,7 @@ from typing import TypeVar
 from app.models import Equipment, InspectionPlan, InspectionPlanStep
 from app.repositories.employee import EmployeeRepository
 from app.repositories.equipment import EquipmentRepository
-from app.repositories.inspection_plan import InspectionPlanRepository, UNSET
+from app.repositories.inspection_plan import UNSET, InspectionPlanRepository
 from app.schemas.inspection_plan import (
     InspectionPlanCreate,
     InspectionPlanEquipmentRead,
@@ -66,7 +66,9 @@ class InspectionPlanService:
         ]
 
         if not prioritized_equipment_ids:
-            raise ServiceError("No equipment found to generate an inspection plan", status_code=400)
+            raise ServiceError(
+                "No equipment found to generate an inspection plan", status_code=400
+            )
 
         created = await self.plan_repository.create(
             {
@@ -78,7 +80,9 @@ class InspectionPlanService:
         )
         return await self._to_read_model(created)
 
-    async def get_or_generate_for_employee(self, employee_id: int) -> InspectionPlanRead:
+    async def get_or_generate_for_employee(
+        self, employee_id: int
+    ) -> InspectionPlanRead:
         await self._assert_employee_exists(employee_id)
 
         active_plan = await self.plan_repository.find_active_for_employee(employee_id)
@@ -102,7 +106,9 @@ class InspectionPlanService:
             raise ServiceError("Inspection plan not found", status_code=404)
         return await self.plan_repository.get_next_pending_step(plan_id)
 
-    async def update(self, plan_id: int, payload: InspectionPlanUpdate) -> InspectionPlanRead:
+    async def update(
+        self, plan_id: int, payload: InspectionPlanUpdate
+    ) -> InspectionPlanRead:
         current = await self.plan_repository.get_by_id(plan_id)
         if not current:
             raise ServiceError("Inspection plan not found", status_code=404)
@@ -152,9 +158,13 @@ class InspectionPlanService:
 
     async def _assert_employee_exists(self, employee_id: int) -> None:
         if not await self.employee_repository.get_by_id(employee_id):
-            raise ServiceError("Employee for inspection plan was not found", status_code=400)
+            raise ServiceError(
+                "Employee for inspection plan was not found", status_code=400
+            )
 
-    async def _to_read_model(self, entity: InspectionPlan | object) -> InspectionPlanRead:
+    async def _to_read_model(
+        self, entity: InspectionPlan | object
+    ) -> InspectionPlanRead:
         normalized_entity = self._unwrap_entity(entity, InspectionPlan)
         if normalized_entity is None:
             raise ServiceError("Inspection plan entity is invalid", status_code=500)
@@ -163,7 +173,9 @@ class InspectionPlanService:
         if entity.id is None:
             raise ServiceError("Inspection plan ID is missing", status_code=500)
 
-        assigned_employee_id = await self.plan_repository.get_assigned_employee_id(entity.id)
+        assigned_employee_id = await self.plan_repository.get_assigned_employee_id(
+            entity.id
+        )
         next_step = await self.plan_repository.get_next_pending_step(entity.id)
 
         normalized_steps = [
@@ -178,16 +190,18 @@ class InspectionPlanService:
             if (equipment := self._unwrap_entity(raw_equipment, Equipment)) is not None
         ]
         equipment_by_id = {
-            equipment.id: equipment for equipment in normalized_equipment_items if equipment.id is not None
+            equipment.id: equipment
+            for equipment in normalized_equipment_items
+            if equipment.id is not None
         }
 
         steps_read: list[InspectionPlanStepRead] = []
         ordered_equipment: list[InspectionPlanEquipmentRead] = []
 
         for step in sorted_steps:
-            equipment = self._unwrap_entity(step.equipment, Equipment) or equipment_by_id.get(
-                step.equipment_id
-            )
+            equipment = self._unwrap_entity(
+                step.equipment, Equipment
+            ) or equipment_by_id.get(step.equipment_id)
             if not equipment:
                 continue
 

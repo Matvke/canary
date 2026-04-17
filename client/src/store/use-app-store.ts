@@ -27,12 +27,12 @@ import type {
   SyncIndicator,
 } from '@/types'
 
-interface Notice {
+export interface Notice {
   message: string
   tone: 'ok' | 'defect' | 'info' | 'error'
 }
 
-interface SyncSummary {
+export interface SyncSummary {
   failed: number
   pending: number
   syncing: boolean
