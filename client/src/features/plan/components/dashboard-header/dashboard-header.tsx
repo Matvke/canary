@@ -62,16 +62,18 @@ export function DashboardHeader({
         </article>
       </div>
 
-      <div className="mt-5 space-y-3">
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+      <h2 className="my-4 text-sm font-semibold">Сортировать по</h2>
+
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1">
           <SortButton active={sortMode === 'route'} onClick={() => onSortModeChange('route')}>
-            По маршруту
+            Маршруту
           </SortButton>
           <SortButton active={sortMode === 'status'} onClick={() => onSortModeChange('status')}>
-            По статусу
+            Статусу
           </SortButton>
           <SortButton active={sortMode === 'priority'} onClick={() => onSortModeChange('priority')}>
-            По приоритету
+            Приоритету
           </SortButton>
         </div>
 

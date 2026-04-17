@@ -1,4 +1,4 @@
-import { CheckCircle2, CircleAlert } from 'lucide-react'
+import {CheckCircle2, CircleAlert, X} from 'lucide-react'
 
 import type { Notice } from '@/store/use-app-store'
 
@@ -22,11 +22,13 @@ export function NoticeBanner({ notice, onDismiss }: NoticeBannerProps) {
   return (
     <button
       type="button"
-      onClick={onDismiss}
-      className={`mt-4 flex w-full items-start gap-3 rounded-[1.5rem] border px-4 py-3 text-left shadow-sm ${toneClass}`}
+      className={`mt-4 flex w-full items-center justify-between rounded-[1.5rem] border px-4 py-3 text-left shadow-sm ${toneClass}`}
     >
-      {isError ? <CircleAlert className="mt-0.5 size-4 shrink-0" /> : <CheckCircle2 className="mt-0.5 size-4 shrink-0" />}
-      <span className="text-sm font-medium">{notice.message}</span>
+      <span className={"flex gap-3"}>
+        {isError ? <CircleAlert className="mt-0.5 size-4 shrink-0" /> : <CheckCircle2 className="mt-0.5 size-4 shrink-0" />}
+        <span className="text-sm font-medium">{notice.message}</span>
+      </span>
+      <button className="hover:cursor-pointer" onClick={onDismiss}><X size={16} /></button>
     </button>
   )
 }

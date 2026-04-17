@@ -10,7 +10,7 @@ export function SortButton({ active, children, onClick }: SortButtonProps) {
       type="button"
       onClick={onClick}
       className={[
-        'min-h-11 rounded-2xl border px-4 py-2 text-sm font-semibold transition',
+        'min-h-11 rounded-2xl border px-5 py-2 text-sm font-semibold transition',
         active
           ? 'border-stone-900 bg-stone-900 text-white'
           : 'border-stone-200 bg-white text-stone-700',

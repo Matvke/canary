@@ -1,9 +1,9 @@
-import { Mic, QrCode } from 'lucide-react'
-import { useState } from 'react'
+import {QrCode} from 'lucide-react'
+import {useState} from 'react'
 
-import { Button } from '@/components/ui/button'
-import { QrScannerPanel } from '@/features/qr/components/qr-scanner-panel/qr-scanner-panel'
-import type { EquipmentRecord, InspectionDraft } from '@/types'
+import {Button} from '@/components/ui/button'
+import {QrScannerPanel} from '@/features/qr/components/qr-scanner-panel/qr-scanner-panel'
+import type {EquipmentRecord, InspectionDraft} from '@/types'
 
 interface QrConfirmationCardProps {
   draft: InspectionDraft
@@ -11,7 +11,7 @@ interface QrConfirmationCardProps {
   onQrScan: (code: string) => Promise<{ matched: boolean; message: string }>
 }
 
-export function QrConfirmationCard({ draft, equipment, onQrScan }: QrConfirmationCardProps) {
+export function QrConfirmationCard({draft, equipment, onQrScan}: QrConfirmationCardProps) {
   const [scannerOpen, setScannerOpen] = useState(false)
 
   const qrTone = draft.qrStatus === 'matched'
@@ -36,7 +36,7 @@ export function QrConfirmationCard({ draft, equipment, onQrScan }: QrConfirmatio
           </p>
         </div>
         <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${qrTone}`}>
-          <QrCode className="size-3.5" />
+          <QrCode className="size-3.5"/>
           {qrLabel}
         </div>
       </div>
@@ -49,18 +49,8 @@ export function QrConfirmationCard({ draft, equipment, onQrScan }: QrConfirmatio
           className="h-12 flex-1 rounded-2xl"
           disabled={Boolean(draft.completedAt)}
         >
-          <QrCode className="size-4" />
+          <QrCode className="size-4"/>
           Сканировать QR
-        </Button>
-        <Button
-          type="button"
-          size="lg"
-          variant="outline"
-          className="h-12 rounded-2xl px-4"
-          disabled
-        >
-          <Mic className="size-4" />
-          Быстрый ввод
         </Button>
       </div>
 
