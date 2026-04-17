@@ -174,7 +174,7 @@ async function fetchLegacyPlanBundle(): Promise<RemotePlanBundle> {
 
 export async function fetchTodayPlan(): Promise<RemotePlanBundle> {
   try {
-    const modernResponse = await requestJson<unknown>(`${API_V1_PREFIX}/inspection-plans/today`)
+    const modernResponse = await requestJson<unknown>(`${API_V1_PREFIX}/inspection-plans/today/`)
     const modernBundle = normalizeModernBundle(modernResponse)
     if (modernBundle) {
       return modernBundle

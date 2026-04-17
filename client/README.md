@@ -47,7 +47,7 @@ docker run --rm -p 8080:8080 \
 Клиент сначала пробует новые endpoints:
 
 ```text
-GET  /inspection-plans/today
+GET  /inspection-plans/today/
 POST /inspection-results
 POST /upload-photo
 ```
