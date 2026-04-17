@@ -213,6 +213,11 @@ function modernInspectionPayload(draft: InspectionDraft, equipment: EquipmentRec
     checklist: draft.checklistValues,
     photo_ids: draft.photos.map((photo) => photo.id),
     photo_urls: draft.photos.map((photo) => photo.remoteUrl).filter(Boolean),
+    supervision: {
+      quality_review_required: draft.supervision?.reviewRequired ?? false,
+      selected_at: draft.supervision?.selectedAt ?? null,
+      reason: draft.supervision?.reason ?? null,
+    },
   }
 }
 
@@ -234,6 +239,7 @@ function legacyInspectionPayload(
     timestamp: draft.completedAt ?? draft.updatedAt,
     photo_url: draft.photos[0]?.remoteUrl ?? null,
     observations: commentField ? values[commentField.id] : null,
+    supervisor_follow_up: draft.supervision?.reviewRequired ?? false,
   }
 }
 

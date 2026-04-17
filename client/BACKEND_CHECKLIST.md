@@ -32,6 +32,7 @@
 - [ ] Вернуть приоритет оборудования как `high | medium | low`
 - [ ] Вернуть динамический checklist template или согласовать фиксированные `checklistTemplateId`
 - [ ] Принимать результаты, созданные offline и отправленные позже
+- [ ] Принимать флаг выборочного надзора `supervision.quality_review_required`
 - [ ] Не требовать синхронного ожидания результата на UI: клиент сохраняет локально и уходит дальше
 - [ ] Возвращать стабильные JSON-ошибки для 4xx/5xx
 
@@ -255,7 +256,12 @@ Content-Type: application/json
   ],
   "photo_urls": [
     "https://api.example.com/uploads/photo-778.jpg"
-  ]
+  ],
+  "supervision": {
+    "quality_review_required": true,
+    "selected_at": "2026-04-17T05:20:00.000Z",
+    "reason": "quality_control_sample"
+  }
 }
 ```
 

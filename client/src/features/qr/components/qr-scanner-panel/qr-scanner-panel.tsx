@@ -1,3 +1,5 @@
+import './qr-scanner-panel.css'
+
 import { Camera, ScanLine, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
@@ -124,7 +126,7 @@ export function QrScannerPanel({ expectedCode, onClose, onDetected }: QrScannerP
         {!active ? (
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/70 text-sm text-stone-200">
             <Camera className="size-7" />
-            Подключаю камеру…
+            Подключаю камеру...
           </div>
         ) : null}
       </div>
