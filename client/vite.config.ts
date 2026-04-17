@@ -10,23 +10,39 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: 'prompt',
+      registerType: 'autoUpdate',
       injectRegister: false,
-      includeAssets: ['favicon.svg'],
+      includeAssets: ['favicon.svg', 'icon-192.svg', 'icon-512.svg'],
       manifest: {
-        name: 'Canary',
-        short_name: 'Canary',
-        description: 'Canary client application',
-        theme_color: '#111111',
-        background_color: '#ffffff',
+        name: 'Canary Обходы',
+        short_name: 'Обходы',
+        description: 'Офлайн-клиент обходчика для промышленного оборудования',
+        theme_color: '#7c4f26',
+        background_color: '#f9f5ec',
         display: 'standalone',
         start_url: '/',
         scope: '/',
-        icons: [],
+        lang: 'ru',
+        icons: [
+          {
+            src: 'icon-192.svg',
+            sizes: '192x192',
+            type: 'image/svg+xml',
+            purpose: 'any',
+          },
+          {
+            src: 'icon-512.svg',
+            sizes: '512x512',
+            type: 'image/svg+xml',
+            purpose: 'any maskable',
+          },
+        ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
+        globIgnores: ['env.js'],
         navigateFallback: '/index.html',
+        cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
             urlPattern: ({ request }) => request.mode === 'navigate',
@@ -36,10 +52,23 @@ export default defineConfig({
               networkTimeoutSeconds: 3,
             },
           },
+          {
+            urlPattern: ({ url, request }) => request.method === 'GET' && (
+              url.pathname.includes('/inspection-plans/today')
+              || url.pathname.includes('/api/v1/inspection-plans/')
+              || url.pathname.includes('/equipment/')
+              || url.pathname.includes('/api/v1/equipment/')
+            ),
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-read-model',
+              networkTimeoutSeconds: 4,
+            },
+          },
         ],
       },
       devOptions: {
-        enabled: false,
+        enabled: true,
       },
     }),
   ],
