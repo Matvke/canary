@@ -14,7 +14,9 @@ from app.services.errors import ServiceError
 from app.services.inspection import InspectionService
 
 router = APIRouter()
-templates = Jinja2Templates(directory=str(Path(__file__).resolve().parents[2] / "templates"))
+templates = Jinja2Templates(
+    directory=str(Path(__file__).resolve().parents[2] / "templates")
+)
 
 
 def get_service(session: AsyncSession = Depends(get_db_session)) -> InspectionService:
@@ -51,7 +53,7 @@ async def get_inspection_payload(
     )
 
 
-@router.get("/create", response_class=HTMLResponse)
+@router.get("/form", response_class=HTMLResponse)
 async def create_inspection_form(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(
         request=request,
@@ -72,7 +74,9 @@ async def create_inspection(
 
 
 @router.get("/", response_model=list[InspectionRead])
-async def list_inspections(service: InspectionService = Depends(get_service)) -> list[InspectionRead]:
+async def list_inspections(
+    service: InspectionService = Depends(get_service),
+) -> list[InspectionRead]:
     return await service.list()
 
 
