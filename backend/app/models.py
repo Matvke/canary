@@ -90,3 +90,34 @@ class InspectionPlan(SQLModel, table=True):
             secondary="inspection_plan_equipment",
         )
     )
+    steps: list[InspectionPlanStep] = Relationship(
+        sa_relationship=relationship(
+            "InspectionPlanStep",
+            back_populates="plan",
+            cascade="all, delete-orphan",
+            order_by="InspectionPlanStep.step_order",
+        )
+    )
+
+
+class InspectionPlanStep(SQLModel, table=True):
+    __tablename__ = "inspection_plan_steps"
+
+    id: int | None = Field(default=None, primary_key=True)
+    plan_id: int = Field(foreign_key="inspection_plans.id", index=True)
+    equipment_id: int = Field(foreign_key="equipment.id", index=True)
+    step_order: int = Field(index=True, ge=1)
+    completed_at: datetime | None = None
+    completed_inspection_id: int | None = Field(default=None, foreign_key="inspections.id")
+
+    plan: InspectionPlan = Relationship(
+        sa_relationship=relationship("InspectionPlan", back_populates="steps")
+    )
+    equipment: Equipment = Relationship(sa_relationship=relationship("Equipment"))
+
+
+class InspectionPlanAssignment(SQLModel, table=True):
+    __tablename__ = "inspection_plan_assignments"
+
+    plan_id: int = Field(foreign_key="inspection_plans.id", primary_key=True)
+    employee_id: int = Field(foreign_key="employees.id", index=True)

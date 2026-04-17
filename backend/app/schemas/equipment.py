@@ -4,7 +4,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 
-EquipmentStatus = Literal["operational", "maintenance", "out_of_service"]
+EquipmentStatus = Literal["operational", "maintenance", "out_of_service", "broken"]
 
 
 class EquipmentBase(BaseModel):

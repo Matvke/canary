@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.deps import get_db_session
+from app.repositories.employee import EmployeeRepository
 from app.repositories.equipment import EquipmentRepository
 from app.repositories.inspection_plan import InspectionPlanRepository
 from app.schemas.inspection_plan import (
@@ -21,6 +22,7 @@ def get_service(
     return InspectionPlanService(
         plan_repository=InspectionPlanRepository(session),
         equipment_repository=EquipmentRepository(session),
+        employee_repository=EmployeeRepository(session),
     )
 
 
@@ -31,6 +33,32 @@ async def create_inspection_plan(
 ) -> InspectionPlanRead:
     try:
         return await service.create(payload)
+    except ServiceError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.message) from exc
+
+
+@router.post(
+    "/generate/{employee_id}",
+    response_model=InspectionPlanRead,
+    status_code=status.HTTP_201_CREATED,
+)
+async def generate_inspection_plan_for_employee(
+    employee_id: int,
+    service: InspectionPlanService = Depends(get_service),
+) -> InspectionPlanRead:
+    try:
+        return await service.generate_for_employee(employee_id)
+    except ServiceError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.message) from exc
+
+
+@router.get("/employee/{employee_id}/active", response_model=InspectionPlanRead)
+async def get_active_inspection_plan_for_employee(
+    employee_id: int,
+    service: InspectionPlanService = Depends(get_service),
+) -> InspectionPlanRead:
+    try:
+        return await service.get_or_generate_for_employee(employee_id)
     except ServiceError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.message) from exc
 

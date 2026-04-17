@@ -15,7 +15,7 @@ class InspectionBase(BaseModel):
 
 
 class InspectionCreate(InspectionBase):
-    pass
+    inspection_plan_id: int | None = None
 
 
 class InspectionUpdate(BaseModel):

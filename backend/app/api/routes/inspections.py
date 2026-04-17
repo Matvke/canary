@@ -9,9 +9,11 @@ from app.api.deps import get_db_session
 from app.repositories.employee import EmployeeRepository
 from app.repositories.equipment import EquipmentRepository
 from app.repositories.inspection import InspectionRepository
+from app.repositories.inspection_plan import InspectionPlanRepository
 from app.schemas.inspection import InspectionCreate, InspectionRead, InspectionUpdate
 from app.services.errors import ServiceError
 from app.services.inspection import InspectionService
+from app.services.inspection_plan import InspectionPlanService
 
 router = APIRouter()
 templates = Jinja2Templates(
@@ -24,6 +26,17 @@ def get_service(session: AsyncSession = Depends(get_db_session)) -> InspectionSe
         inspection_repository=InspectionRepository(session),
         equipment_repository=EquipmentRepository(session),
         employee_repository=EmployeeRepository(session),
+        inspection_plan_repository=InspectionPlanRepository(session),
+    )
+
+
+def get_plan_service(
+    session: AsyncSession = Depends(get_db_session),
+) -> InspectionPlanService:
+    return InspectionPlanService(
+        plan_repository=InspectionPlanRepository(session),
+        equipment_repository=EquipmentRepository(session),
+        employee_repository=EmployeeRepository(session),
     )
 
 
@@ -31,6 +44,7 @@ async def get_inspection_payload(
     request: Request,
     equipment_id: int | None = Form(default=None),
     employee_id: int | None = Form(default=None),
+    inspection_plan_id: int | None = Form(default=None),
     temperature: float | None = Form(default=None),
     pressure: float | None = Form(default=None),
     vibration: float | None = Form(default=None),
@@ -45,6 +59,7 @@ async def get_inspection_payload(
     return InspectionCreate(
         equipment_id=equipment_id,
         employee_id=employee_id,
+        inspection_plan_id=inspection_plan_id,
         temperature=temperature,
         pressure=pressure,
         vibration=vibration,
@@ -54,11 +69,33 @@ async def get_inspection_payload(
 
 
 @router.get("/form", response_class=HTMLResponse)
-async def create_inspection_form(request: Request) -> HTMLResponse:
+async def create_inspection_form(
+    request: Request,
+    employee_id: int | None = None,
+    service: InspectionPlanService = Depends(get_plan_service),
+) -> HTMLResponse:
+    context: dict[str, object] = {
+        "employee_id": employee_id,
+        "plan": None,
+        "next_step": None,
+        "form_error": None,
+    }
+
+    if employee_id is not None:
+        try:
+            plan = await service.get_or_generate_for_employee(employee_id)
+            context["plan"] = plan
+            context["next_step"] = next(
+                (step for step in plan.steps if not step.is_completed),
+                None,
+            )
+        except ServiceError as exc:
+            context["form_error"] = exc.message
+
     return templates.TemplateResponse(
         request=request,
         name="inspection_create.html",
-        context={},
+        context=context,
     )
 
 
