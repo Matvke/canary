@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, List
 
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -17,7 +17,7 @@ class InspectionRepository:
         await self.session.refresh(entity)
         return entity
 
-    async def list(self) -> list[Inspection]:
+    async def list(self) -> List[Inspection]:
         statement = select(Inspection).order_by(Inspection.id)
         result = await self.session.exec(statement)
         return list(result.all())

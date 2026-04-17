@@ -28,6 +28,8 @@ interface LegacyPlan {
   equipment_ids: number[]
 }
 
+const API_V1_PREFIX = '/api/v1'
+
 function buildUrl(path: string): string {
   return `${getApiBase()}${path}`
 }
@@ -172,7 +174,7 @@ async function fetchLegacyPlanBundle(): Promise<RemotePlanBundle> {
 
 export async function fetchTodayPlan(): Promise<RemotePlanBundle> {
   try {
-    const modernResponse = await requestJson<unknown>('/inspection-plans/today')
+    const modernResponse = await requestJson<unknown>(`${API_V1_PREFIX}/inspection-plans/today`)
     const modernBundle = normalizeModernBundle(modernResponse)
     if (modernBundle) {
       return modernBundle
@@ -254,7 +256,7 @@ export async function uploadPhoto(
   formData.append('equipment_id', equipment.backendId?.toString() ?? equipment.id)
   formData.append('captured_at', photo.capturedAt)
 
-  const response = await requestResponse('/upload-photo', {
+  const response = await requestResponse(`${API_V1_PREFIX}/upload-photo`, {
     method: 'POST',
     body: formData,
   })
@@ -275,7 +277,7 @@ export async function submitInspection(
   template: ChecklistTemplate,
 ): Promise<{ serverId?: string }> {
   try {
-    const response = await requestResponse('/inspection-results', {
+    const response = await requestResponse(`${API_V1_PREFIX}/inspection-results`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(modernInspectionPayload(draft, equipment)),

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, List
 
 from sqlalchemy.orm import selectinload
 from sqlmodel import delete, select
@@ -63,7 +63,7 @@ class InspectionPlanRepository:
             raise RuntimeError("Failed to load created inspection plan")
         return created
 
-    async def list(self) -> list[InspectionPlan]:
+    async def list(self) -> List[InspectionPlan]:
         statement = (
             select(InspectionPlan)
             .options(
@@ -215,7 +215,7 @@ class InspectionPlanRepository:
         result = await self.session.exec(statement)
         return result.first()
 
-    async def _get_equipment_by_ids(self, equipment_ids: list[int]) -> list[Equipment]:
+    async def _get_equipment_by_ids(self, equipment_ids: list[int]) -> List[Equipment]:
         statement = select(Equipment).where(Equipment.id.in_(equipment_ids))
         result = await self.session.exec(statement)
         equipment_items = list(result.all())
@@ -227,9 +227,9 @@ class InspectionPlanRepository:
         ]
 
     @staticmethod
-    def _unique_equipment_ids(equipment_ids: list[int]) -> list[int]:
+    def _unique_equipment_ids(equipment_ids: list[int]) -> List[int]:
         seen: set[int] = set()
-        unique_ids: list[int] = []
+        unique_ids: List[int] = []
         for equipment_id in equipment_ids:
             if equipment_id in seen:
                 continue

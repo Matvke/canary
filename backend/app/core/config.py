@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import List
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -10,6 +11,14 @@ class Settings(BaseSettings):
     app_name: str = "Factory Inspection Reporting API"
     api_v1_prefix: str = "/api/v1"
     database_url: str = f"sqlite+aiosqlite:///{DEFAULT_DB_PATH.as_posix()}"
+    cors_origins: List[str] = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:8080",
+        "http://127.0.0.1:8080",
+    ]
 
     model_config = SettingsConfigDict(
         env_file=".env",
