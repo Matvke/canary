@@ -11,6 +11,8 @@ import type {
 } from '@/types'
 import { DEFAULT_EMPLOYEE_ID, DEFAULT_INSPECTOR_NAME } from '@/data/demo'
 
+const SUPERVISION_REVIEW_PROBABILITY = 0.25
+
 export function nowIso(): string {
   return new Date().toISOString()
 }
@@ -76,6 +78,14 @@ export function getEmptyChecklistValues(template: ChecklistTemplate): Record<str
   }, {})
 }
 
+function createSupervisionSignal(timestamp: string): InspectionDraft['supervision'] {
+  return {
+    reviewRequired: Math.random() < SUPERVISION_REVIEW_PROBABILITY,
+    selectedAt: timestamp,
+    reason: 'quality_control_sample',
+  }
+}
+
 export function createDraft(planId: string, equipment: EquipmentRecord, template: ChecklistTemplate): InspectionDraft {
   const timestamp = nowIso()
 
@@ -93,6 +103,7 @@ export function createDraft(planId: string, equipment: EquipmentRecord, template
     checklistValues: getEmptyChecklistValues(template),
     checklistErrors: {},
     photos: [],
+    supervision: createSupervisionSignal(timestamp),
     syncStatus: 'saved_locally',
   }
 }

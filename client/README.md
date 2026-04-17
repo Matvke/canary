@@ -42,6 +42,8 @@ docker run --rm -p 8080:8080 \
 
 ## REST API, который ожидает клиент
 
+Полный checklist для backend-интеграции и JSON-контракты находятся в [BACKEND_CHECKLIST.md](BACKEND_CHECKLIST.md).
+
 Клиент сначала пробует новые endpoints:
 
 ```text

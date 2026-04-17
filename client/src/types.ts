@@ -70,6 +70,12 @@ export interface InspectionPhoto {
   error?: string
 }
 
+export interface SupervisionSignal {
+  reviewRequired: boolean
+  selectedAt: string
+  reason: 'quality_control_sample'
+}
+
 export interface InspectionDraft {
   id: string
   planId: string
@@ -88,6 +94,7 @@ export interface InspectionDraft {
   checklistValues: Record<string, StoredChecklistValue>
   checklistErrors: Record<string, string>
   photos: InspectionPhoto[]
+  supervision?: SupervisionSignal
   syncStatus: SyncIndicator
   serverId?: string
   lastSyncError?: string

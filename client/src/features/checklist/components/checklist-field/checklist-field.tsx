@@ -1,6 +1,6 @@
 import { Check, ChevronDown } from 'lucide-react'
 
-import { VoiceInputButton } from '@/components/voice-input-button'
+import { VoiceInputButton } from '@/features/voice/components/voice-input-button/voice-input-button'
 import type { ChecklistItemTemplate, StoredChecklistValue } from '@/types'
 
 interface ChecklistFieldProps {
@@ -79,7 +79,7 @@ export function ChecklistField({ disabled, error, item, onChange, value }: Check
           </div>
           {item.range ? (
             <p className="mt-2 text-xs text-stone-500">
-              Допустимо {item.range.min ?? '...'}–{item.range.max ?? '...'} {item.range.unit ?? ''}
+              Допустимо {item.range.min ?? '...'}-{item.range.max ?? '...'} {item.range.unit ?? ''}
             </p>
           ) : null}
         </label>
