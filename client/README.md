@@ -44,7 +44,7 @@ docker run --rm -p 8080:8080 \
 
 Полный checklist для backend-интеграции и JSON-контракты находятся в [BACKEND_CHECKLIST.md](BACKEND_CHECKLIST.md).
 
-Клиент сначала пробует новые endpoints:
+Клиент использует production endpoints:
 
 ```text
 GET  /inspection-plans/today/
@@ -52,13 +52,7 @@ POST /inspection-results
 POST /upload-photo
 ```
 
-Для совместимости с текущим backend есть fallback на legacy endpoints:
-
-```text
-GET  /api/v1/inspection-plans/
-GET  /api/v1/equipment/:id
-POST /api/v1/inspections/
-```
+Если backend недоступен, приложение использует уже сохранённый IndexedDB-кэш. Legacy endpoints и demo-plan fallback в production-интеграции не используются.
 
 ## Локальный запуск без Docker
 

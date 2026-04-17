@@ -161,5 +161,5 @@ export function createDemoPlanBundle(): RemotePlanBundle {
     })),
   }
 
-  return { plan, equipment }
+  return { plan, equipment, templates: DEFAULT_TEMPLATES }
 }

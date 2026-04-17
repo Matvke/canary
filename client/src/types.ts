@@ -127,4 +127,5 @@ export interface ValidationResult {
 export interface RemotePlanBundle {
   plan: DailyPlan
   equipment: EquipmentRecord[]
+  templates: ChecklistTemplate[]
 }

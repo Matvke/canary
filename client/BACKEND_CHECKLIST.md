@@ -1,24 +1,22 @@
 # Backend Checklist для Canary PWA
 
-Этот документ описывает, что нужно от backend, чтобы клиент работал без demo fallback и без legacy-адаптеров.
+Этот документ описывает backend-контракт, который использует клиент.
 
 ## Текущее состояние клиента
 
-Клиент не только на моках.
+Клиент работает с production endpoints из этого документа.
 
 Порядок загрузки плана:
 
 1. `GET /inspection-plans/today`
-2. Если не получилось или формат не подходит: legacy fallback `GET /api/v1/inspection-plans/` + `GET /api/v1/equipment/:id`
-3. Если backend недоступен и пользователь offline: локальный demo-plan из IndexedDB
+2. Если backend недоступен, используется уже сохранённый IndexedDB-кэш
+3. Если кэша нет, пользователь видит ошибку загрузки плана
 
 Порядок отправки результата:
 
 1. Фото уходят через `POST /upload-photo`
 2. Результат уходит через `POST /inspection-results`
-3. Если `POST /inspection-results` не сработал: legacy fallback `POST /api/v1/inspections/`
-
-Для production-интеграции backend должен реализовать новые endpoints ниже.
+3. Неуспешные действия остаются в локальной очереди и повторяются автоматически
 
 ## Обязательные backend-задачи
 
@@ -119,9 +117,7 @@ GET /inspection-plans/today
 }
 ```
 
-### Минимально допустимый формат сейчас
-
-Клиент уже умеет читать упрощённый ответ, если `items` есть на верхнем уровне:
+### Минимально допустимый формат
 
 ```json
 {
@@ -134,13 +130,26 @@ GET /inspection-plans/today
       "location": "Корпус А",
       "expectedQrCode": "CANARY-EQ-101",
       "priority": "high",
-      "checklistTemplateId": "pump-station"
+      "checklistTemplateId": "pump-station",
+      "checklist": {
+        "id": "pump-station",
+        "name": "Насосная станция",
+        "version": 1,
+        "items": [
+          {
+            "id": "comment",
+            "label": "Комментарий",
+            "type": "text",
+            "required": false
+          }
+        ]
+      }
     }
   ]
 }
 ```
 
-Но для полноценной динамики backend должен отдавать `checklist`.
+`checklist` обязателен для каждого элемента плана. Без него клиент не создаёт черновик осмотра.
 
 ## 2. Checklist contract
 

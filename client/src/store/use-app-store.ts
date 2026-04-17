@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 
 import { db } from '@/data/db'
-import { createDemoPlanBundle, DEFAULT_TEMPLATES } from '@/data/demo'
+import { DEFAULT_TEMPLATES } from '@/data/demo'
 import { fetchTodayPlan, submitInspection, uploadPhoto } from '@/lib/api'
 import {
   chooseNextEquipmentId,
@@ -208,18 +208,17 @@ async function loadCurrentDraft(
   return nextDraft
 }
 
-async function ensurePlanData(): Promise<{ plan: DailyPlan; equipment: EquipmentRecord[] }> {
+async function ensurePlanData(): Promise<{ plan: DailyPlan; equipment: EquipmentRecord[]; templates: ChecklistTemplate[] }> {
   const remoteBundle = await fetchTodayPlan()
-  const plan = remoteBundle.plan.source === 'demo'
-    ? remoteBundle.plan
-    : { ...remoteBundle.plan, source: 'remote' as const }
+  const plan = { ...remoteBundle.plan, source: 'remote' as const }
 
-  await db.transaction('rw', db.plans, db.equipment, async () => {
+  await db.transaction('rw', db.plans, db.equipment, db.templates, async () => {
     await db.plans.put(plan)
     await db.equipment.bulkPut(remoteBundle.equipment)
+    await db.templates.bulkPut(remoteBundle.templates)
   })
 
-  return { plan, equipment: remoteBundle.equipment }
+  return { plan, equipment: remoteBundle.equipment, templates: remoteBundle.templates }
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -286,10 +285,14 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ loading: true })
 
     try {
-      const { plan, equipment } = await ensurePlanData()
+      const { plan, equipment, templates } = await ensurePlanData()
       const equipmentMap = {
         ...get().equipment,
         ...indexById(equipment),
+      }
+      const templateMap = {
+        ...get().templates,
+        ...indexById(templates),
       }
       const selectedEquipmentId = getDefaultSelection(
         plan,
@@ -297,12 +300,13 @@ export const useAppStore = create<AppState>((set, get) => ({
         get().selectedEquipmentId,
       )
       const currentDraft = selectedEquipmentId
-        ? await loadCurrentDraft(plan, equipmentMap, get().templates, selectedEquipmentId)
+        ? await loadCurrentDraft(plan, equipmentMap, templateMap, selectedEquipmentId)
         : null
 
       set({
         plan,
         equipment: equipmentMap,
+        templates: templateMap,
         selectedEquipmentId,
         currentDraft,
         loading: false,
@@ -310,35 +314,15 @@ export const useAppStore = create<AppState>((set, get) => ({
       })
     } catch (error) {
       const hasLocalPlan = Boolean(get().plan)
-      if (!hasLocalPlan) {
-        const demoBundle = createDemoPlanBundle()
-        await db.transaction('rw', db.plans, db.equipment, async () => {
-          await db.plans.put(demoBundle.plan)
-          await db.equipment.bulkPut(demoBundle.equipment)
-        })
-
-        const equipmentMap = indexById(demoBundle.equipment)
-        const currentDraft = await loadCurrentDraft(
-          demoBundle.plan,
-          equipmentMap,
-          get().templates,
-          demoBundle.plan.items[0]?.equipmentId ?? '',
-        )
-
-        set({
-          plan: demoBundle.plan,
-          equipment: equipmentMap,
-          selectedEquipmentId: demoBundle.plan.items[0]?.equipmentId ?? null,
-          currentDraft,
-          loading: false,
-          notice: createNotice('Сервер недоступен. Загружен локальный демонстрационный маршрут.', 'info'),
-        })
-      } else {
-        set({
-          loading: false,
-          notice: createNotice(`Оставлен локальный кэш. ${toErrorMessage(error)}`, 'info'),
-        })
-      }
+      set({
+        loading: false,
+        notice: createNotice(
+          hasLocalPlan
+            ? `Оставлен локальный кэш. ${toErrorMessage(error)}`
+            : `Не удалось загрузить план с сервера. ${toErrorMessage(error)}`,
+          hasLocalPlan ? 'info' : 'error',
+        ),
+      })
     }
   },
   async selectEquipment(equipmentId) {
@@ -673,7 +657,7 @@ export const useAppStore = create<AppState>((set, get) => ({
           throw new Error('Фотографии ещё не загружены на сервер.')
         }
 
-        const result = await submitInspection(draft, equipmentItem, template)
+        const result = await submitInspection(draft, equipmentItem)
         const nextDraft: InspectionDraft = {
           ...draft,
           syncStatus: 'synced',

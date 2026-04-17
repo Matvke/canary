@@ -1,11 +1,12 @@
-import { createDemoPlanBundle, resolveTemplateId } from '@/data/demo'
-import { createId, nowIso, todayKey, toErrorMessage } from '@/lib/app-utils'
+import { nowIso, todayKey } from '@/lib/app-utils'
 import type {
+  ChecklistItemTemplate,
   ChecklistTemplate,
   EquipmentRecord,
   InspectionDraft,
   InspectionPhoto,
   RemotePlanBundle,
+  Priority,
 } from '@/types'
 
 function getApiBase(): string {
@@ -15,31 +16,31 @@ function getApiBase(): string {
   return (runtimeBase || buildBase || '').replace(/\/$/, '')
 }
 
-interface LegacyEquipment {
-  id: number
-  name: string
-  description?: string | null
-  status?: string
-}
-
-interface LegacyPlan {
-  id: number
-  timestamp?: string
-  equipment_ids: number[]
-}
-
-const API_V1_PREFIX = '/api/v1'
-
 function buildUrl(path: string): string {
   return `${getApiBase()}${path}`
+}
+
+async function readErrorMessage(response: Response): Promise<string> {
+  const contentType = response.headers.get('content-type') ?? ''
+
+  if (contentType.includes('application/json')) {
+    const payload = await response.json().catch(() => null) as Record<string, unknown> | null
+    const code = typeof payload?.code === 'string' ? payload.code : undefined
+    const message = typeof payload?.message === 'string' ? payload.message : undefined
+    const detail = typeof payload?.detail === 'string' ? payload.detail : undefined
+
+    return [code, message ?? detail].filter(Boolean).join(': ') || `HTTP ${response.status}`
+  }
+
+  const text = await response.text()
+  return text || `HTTP ${response.status}`
 }
 
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(buildUrl(path), init)
 
   if (!response.ok) {
-    const text = await response.text()
-    throw new Error(text || `HTTP ${response.status}`)
+    throw new Error(await readErrorMessage(response))
   }
 
   return response.json() as Promise<T>
@@ -48,14 +49,13 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
 async function requestResponse(path: string, init?: RequestInit): Promise<Response> {
   const response = await fetch(buildUrl(path), init)
   if (!response.ok) {
-    const text = await response.text()
-    throw new Error(text || `HTTP ${response.status}`)
+    throw new Error(await readErrorMessage(response))
   }
 
   return response
 }
 
-function normalizePriority(value: unknown): EquipmentRecord['priority'] {
+function normalizePriority(value: unknown): Priority {
   if (value === 'high' || value === 'medium' || value === 'low') {
     return value
   }
@@ -63,50 +63,124 @@ function normalizePriority(value: unknown): EquipmentRecord['priority'] {
   return 'medium'
 }
 
-function normalizeModernBundle(payload: unknown): RemotePlanBundle | null {
-  if (!payload || typeof payload !== 'object') {
-    return null
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object'
+}
+
+function normalizeChecklistItem(value: unknown): ChecklistItemTemplate {
+  if (!isRecord(value)) {
+    throw new Error('Некорректный пункт чеклиста в плане.')
   }
 
-  const source = payload as Record<string, unknown>
+  const id = value.id
+  const label = value.label
+  const type = value.type
+
+  if (typeof id !== 'string' || typeof label !== 'string') {
+    throw new Error('Пункт чеклиста должен содержать id и label.')
+  }
+
+  if (type !== 'number' && type !== 'select' && type !== 'boolean' && type !== 'text') {
+    throw new Error(`Неподдерживаемый тип пункта чеклиста: ${String(type)}.`)
+  }
+
+  const options = Array.isArray(value.options)
+    ? value.options.flatMap((option) => {
+      if (!isRecord(option) || typeof option.value !== 'string' || typeof option.label !== 'string') {
+        return []
+      }
+
+      return [{ value: option.value, label: option.label }]
+    })
+    : undefined
+
+  const range = isRecord(value.range)
+    ? {
+      min: typeof value.range.min === 'number' ? value.range.min : undefined,
+      max: typeof value.range.max === 'number' ? value.range.max : undefined,
+      unit: typeof value.range.unit === 'string' ? value.range.unit : undefined,
+    }
+    : undefined
+
+  return {
+    id,
+    label,
+    type,
+    required: value.required === true,
+    hint: typeof value.hint === 'string' ? value.hint : undefined,
+    placeholder: typeof value.placeholder === 'string' ? value.placeholder : undefined,
+    range,
+    options,
+  }
+}
+
+function normalizeChecklistTemplate(value: unknown, fallbackId: string): ChecklistTemplate {
+  if (!isRecord(value)) {
+    throw new Error('Оборудование в плане должно содержать checklist.')
+  }
+
+  const rawItems = value.items
+  if (!Array.isArray(rawItems) || rawItems.length === 0) {
+    throw new Error('Checklist template должен содержать непустой items.')
+  }
+
+  return {
+    id: typeof value.id === 'string' ? value.id : fallbackId,
+    name: typeof value.name === 'string' ? value.name : 'Чеклист осмотра',
+    version: typeof value.version === 'number' ? value.version : 1,
+    items: rawItems.map(normalizeChecklistItem),
+  }
+}
+
+function normalizeTodayPlanBundle(payload: unknown): RemotePlanBundle {
+  if (!isRecord(payload)) {
+    throw new Error('Ответ /inspection-plans/today должен быть JSON object.')
+  }
+
+  const source = payload
   const items = Array.isArray(source.items) ? source.items : null
   if (!items) {
-    return null
+    throw new Error('Ответ /inspection-plans/today должен содержать массив items.')
   }
 
-  const equipment: EquipmentRecord[] = items.flatMap((entry, index) => {
-    if (!entry || typeof entry !== 'object') {
-      return []
+  const templatesById = new Map<string, ChecklistTemplate>()
+  const equipment: EquipmentRecord[] = items.map((entry, index) => {
+    if (!isRecord(entry)) {
+      throw new Error('Элемент плана должен быть JSON object.')
     }
 
-    const item = entry as Record<string, unknown>
-    const rawId = item.equipmentId ?? item.id
+    const rawId = entry.equipmentId ?? entry.id
     if (typeof rawId !== 'string' && typeof rawId !== 'number') {
-      return []
+      throw new Error('Элемент плана должен содержать id или equipmentId.')
     }
 
     const id = typeof rawId === 'number' ? `equipment-${rawId}` : rawId
-    const name = typeof item.name === 'string' ? item.name : `Оборудование ${rawId}`
+    const name = typeof entry.name === 'string' ? entry.name : `Оборудование ${rawId}`
+    const checklistTemplateId = typeof entry.checklistTemplateId === 'string'
+      ? entry.checklistTemplateId
+      : `${id}-checklist`
+    const checklist = normalizeChecklistTemplate(entry.checklist, checklistTemplateId)
+    templatesById.set(checklist.id, checklist)
 
-    return [{
+    return {
       id,
       backendId: typeof rawId === 'number' ? rawId : undefined,
       name,
-      location: typeof item.location === 'string' ? item.location : `Маршрут ${index + 1}`,
-      priority: normalizePriority(item.priority),
-      checklistTemplateId: typeof item.checklistTemplateId === 'string'
-        ? item.checklistTemplateId
-        : resolveTemplateId(name),
-      equipmentStatus: typeof item.status === 'string' ? item.status : undefined,
-      expectedQrCode: typeof item.expectedQrCode === 'string'
-        ? item.expectedQrCode
-        : `CANARY-EQ-${String(rawId).padStart(3, '0')}`,
+      location: typeof entry.location === 'string' ? entry.location : `Маршрут ${index + 1}`,
+      priority: normalizePriority(entry.priority),
+      checklistTemplateId: checklist.id,
+      equipmentStatus: typeof entry.status === 'string' ? entry.status : undefined,
+      expectedQrCode: typeof entry.expectedQrCode === 'string' ? entry.expectedQrCode : '',
       updatedAt: nowIso(),
-    }]
+    }
   })
 
   if (equipment.length === 0) {
-    return null
+    throw new Error('План на сегодня пуст.')
+  }
+
+  if (equipment.some((item) => !item.expectedQrCode)) {
+    throw new Error('Каждое оборудование в плане должно содержать expectedQrCode.')
   }
 
   return {
@@ -122,84 +196,12 @@ function normalizeModernBundle(payload: unknown): RemotePlanBundle | null {
       })),
     },
     equipment,
-  }
-}
-
-async function fetchLegacyEquipment(equipmentId: number): Promise<LegacyEquipment> {
-  return requestJson<LegacyEquipment>(`/api/v1/equipment/${equipmentId}`)
-}
-
-async function fetchLegacyPlanBundle(): Promise<RemotePlanBundle> {
-  const plans = await requestJson<LegacyPlan[]>('/api/v1/inspection-plans/')
-
-  if (plans.length === 0) {
-    throw new Error('Планов осмотра на сервере нет.')
-  }
-
-  const today = todayKey()
-  const selectedPlan = [...plans]
-    .sort((left, right) => right.id - left.id)
-    .find((plan) => plan.timestamp?.slice(0, 10) === today) ?? plans[plans.length - 1]
-
-  const equipment = await Promise.all(selectedPlan.equipment_ids.map(async (equipmentId, index) => {
-    const remoteEquipment = await fetchLegacyEquipment(equipmentId)
-    return {
-      id: `equipment-${remoteEquipment.id}`,
-      backendId: remoteEquipment.id,
-      name: remoteEquipment.name,
-      location: remoteEquipment.description?.trim() || `Маршрут ${index + 1}`,
-      priority: index === 0 ? 'high' : index < 3 ? 'medium' : 'low',
-      checklistTemplateId: resolveTemplateId(remoteEquipment.name),
-      equipmentStatus: remoteEquipment.status,
-      expectedQrCode: `CANARY-EQ-${remoteEquipment.id.toString().padStart(3, '0')}`,
-      updatedAt: nowIso(),
-    } satisfies EquipmentRecord
-  }))
-
-  return {
-    plan: {
-      id: `plan-${selectedPlan.id}`,
-      date: selectedPlan.timestamp?.slice(0, 10) || today,
-      source: 'remote',
-      syncedAt: nowIso(),
-      items: equipment.map((item, index) => ({
-        equipmentId: item.id,
-        order: index + 1,
-        priority: item.priority,
-      })),
-    },
-    equipment,
+    templates: [...templatesById.values()],
   }
 }
 
 export async function fetchTodayPlan(): Promise<RemotePlanBundle> {
-  try {
-    const modernResponse = await requestJson<unknown>(`${API_V1_PREFIX}/inspection-plans/today/`)
-    const modernBundle = normalizeModernBundle(modernResponse)
-    if (modernBundle) {
-      return modernBundle
-    }
-  } catch {
-    // fall through to legacy endpoint
-  }
-
-  try {
-    return await fetchLegacyPlanBundle()
-  } catch (error) {
-    if (navigator.onLine) {
-      throw new Error(toErrorMessage(error))
-    }
-
-    return createDemoPlanBundle()
-  }
-}
-
-function calculateScore(draft: InspectionDraft): number {
-  if (draft.resultStatus === 'defect') {
-    return 35
-  }
-
-  return 100
+  return normalizeTodayPlanBundle(await requestJson<unknown>('/inspection-plans/today'))
 }
 
 function modernInspectionPayload(draft: InspectionDraft, equipment: EquipmentRecord) {
@@ -223,28 +225,6 @@ function modernInspectionPayload(draft: InspectionDraft, equipment: EquipmentRec
   }
 }
 
-function legacyInspectionPayload(
-  draft: InspectionDraft,
-  equipment: EquipmentRecord,
-  template: ChecklistTemplate,
-) {
-  const values = draft.checklistValues
-  const commentField = template.items.find((item) => item.type === 'text')
-
-  return {
-    equipment_id: equipment.backendId ?? (Number.parseInt(equipment.id.replace(/\D/g, ''), 10) || 0),
-    employee_id: draft.employeeId,
-    temperature: Number(values.temperature ?? 0),
-    pressure: Number(values.pressure ?? 0),
-    vibration: Number(values.vibration ?? 0),
-    score: calculateScore(draft),
-    timestamp: draft.completedAt ?? draft.updatedAt,
-    photo_url: draft.photos[0]?.remoteUrl ?? null,
-    observations: commentField ? values[commentField.id] : null,
-    supervisor_follow_up: draft.supervision?.reviewRequired ?? false,
-  }
-}
-
 export async function uploadPhoto(
   draft: InspectionDraft,
   photo: InspectionPhoto,
@@ -253,10 +233,11 @@ export async function uploadPhoto(
   const formData = new FormData()
   formData.append('file', photo.blob, `${draft.id}-${photo.id}.jpg`)
   formData.append('draft_id', draft.id)
+  formData.append('photo_id', photo.id)
   formData.append('equipment_id', equipment.backendId?.toString() ?? equipment.id)
   formData.append('captured_at', photo.capturedAt)
 
-  const response = await requestResponse(`${API_V1_PREFIX}/upload-photo`, {
+  const response = await requestResponse('/upload-photo', {
     method: 'POST',
     body: formData,
   })
@@ -266,7 +247,11 @@ export async function uploadPhoto(
     ? payload.url
     : typeof payload.photo_url === 'string'
       ? payload.photo_url
-      : `/uploads/${createId('photo')}`
+      : null
+
+  if (!remoteUrl) {
+    throw new Error('Ответ /upload-photo должен содержать url.')
+  }
 
   return { remoteUrl }
 }
@@ -274,23 +259,14 @@ export async function uploadPhoto(
 export async function submitInspection(
   draft: InspectionDraft,
   equipment: EquipmentRecord,
-  template: ChecklistTemplate,
 ): Promise<{ serverId?: string }> {
-  try {
-    const response = await requestResponse(`${API_V1_PREFIX}/inspection-results`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(modernInspectionPayload(draft, equipment)),
-    })
-    const payload = await response.json() as Record<string, unknown>
-    return { serverId: typeof payload.id === 'string' ? payload.id : undefined }
-  } catch {
-    const response = await requestResponse('/api/v1/inspections/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(legacyInspectionPayload(draft, equipment, template)),
-    })
-    const payload = await response.json() as Record<string, unknown>
-    return { serverId: typeof payload.id === 'number' ? String(payload.id) : undefined }
-  }
+  const response = await requestResponse('/inspection-results', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(modernInspectionPayload(draft, equipment)),
+  })
+  const payload = await response.json() as Record<string, unknown>
+  const id = payload.id
+
+  return { serverId: typeof id === 'string' || typeof id === 'number' ? String(id) : undefined }
 }
