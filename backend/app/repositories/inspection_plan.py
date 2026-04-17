@@ -4,7 +4,7 @@ from sqlalchemy.orm import selectinload
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.models import Equipment, InspectionPlan, InspectionPlanEquipmentLink
+from app.models import Equipment, InspectionPlan
 
 
 class InspectionPlanRepository:
@@ -77,15 +77,6 @@ class InspectionPlanRepository:
         await self.session.delete(plan)
         await self.session.commit()
         return True
-
-    async def get_equipment_ids(self, plan_id: int) -> list[int]:
-        statement = (
-            select(InspectionPlanEquipmentLink.equipment_id)
-            .where(InspectionPlanEquipmentLink.plan_id == plan_id)
-            .order_by(InspectionPlanEquipmentLink.equipment_id)
-        )
-        result = await self.session.exec(statement)
-        return list(result.all())
 
     async def _get_equipment_by_ids(self, equipment_ids: list[int]) -> list[Equipment]:
         statement = (

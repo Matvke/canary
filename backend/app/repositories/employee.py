@@ -47,11 +47,7 @@ class EmployeeRepository:
         await self.session.commit()
         return True
 
-    async def get_inspection_ids(self, employee_id: int) -> list[int]:
-        statement = (
-            select(Inspection.id)
-            .where(Inspection.employee_id == employee_id)
-            .order_by(Inspection.id)
-        )
+    async def get_inspections(self, employee_id: int) -> list[Inspection]:
+        statement = select(Inspection).where(Inspection.employee_id == employee_id).order_by(Inspection.id)
         result = await self.session.exec(statement)
         return list(result.all())

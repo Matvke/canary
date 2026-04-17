@@ -3,6 +3,7 @@ from app.repositories.equipment import EquipmentRepository
 from app.repositories.inspection_plan import InspectionPlanRepository
 from app.schemas.inspection_plan import (
     InspectionPlanCreate,
+    InspectionPlanEquipmentRead,
     InspectionPlanRead,
     InspectionPlanUpdate,
 )
@@ -75,12 +76,14 @@ class InspectionPlanService:
         if entity.id is None:
             raise ServiceError("Inspection plan ID is missing", status_code=500)
 
-        equipment_ids = await self.plan_repository.get_equipment_ids(entity.id)
         return InspectionPlanRead(
             id=entity.id,
             timestamp=entity.timestamp,
             observations=entity.observations,
             score=entity.score,
             supervisor_follow_up=entity.supervisor_follow_up,
-            equipment_ids=equipment_ids,
+            equipment_items=[
+                InspectionPlanEquipmentRead.model_validate(equipment)
+                for equipment in entity.equipment_items
+            ],
         )

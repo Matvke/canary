@@ -1,6 +1,11 @@
 from app.models import Employee
 from app.repositories.employee import EmployeeRepository
-from app.schemas.employee import EmployeeCreate, EmployeeRead, EmployeeUpdate
+from app.schemas.employee import (
+    EmployeeCreate,
+    EmployeeInspectionRead,
+    EmployeeRead,
+    EmployeeUpdate,
+)
 from app.services.errors import ServiceError
 
 
@@ -44,10 +49,10 @@ class EmployeeService:
         if entity.id is None:
             raise ServiceError("Employee ID is missing", status_code=500)
 
-        inspection_ids = await self.repository.get_inspection_ids(entity.id)
+        inspections = await self.repository.get_inspections(entity.id)
         return EmployeeRead(
             id=entity.id,
             name=entity.name,
             role=entity.role,
-            inspection_ids=inspection_ids,
+            inspections=[EmployeeInspectionRead.model_validate(inspection) for inspection in inspections],
         )

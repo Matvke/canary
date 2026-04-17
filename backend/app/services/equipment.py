@@ -1,6 +1,11 @@
 from app.models import Equipment
 from app.repositories.equipment import EquipmentRepository
-from app.schemas.equipment import EquipmentCreate, EquipmentRead, EquipmentUpdate
+from app.schemas.equipment import (
+    EquipmentCreate,
+    EquipmentInspectionRead,
+    EquipmentRead,
+    EquipmentUpdate,
+)
 from app.services.errors import ServiceError
 
 
@@ -44,11 +49,11 @@ class EquipmentService:
         if entity.id is None:
             raise ServiceError("Equipment ID is missing", status_code=500)
 
-        inspection_ids = await self.repository.get_inspection_ids(entity.id)
+        inspections = await self.repository.get_inspections(entity.id)
         return EquipmentRead(
             id=entity.id,
             name=entity.name,
             description=entity.description,
             status=entity.status,
-            inspection_ids=inspection_ids,
+            inspections=[EquipmentInspectionRead.model_validate(inspection) for inspection in inspections],
         )

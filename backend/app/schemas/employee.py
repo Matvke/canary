@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -15,8 +17,22 @@ class EmployeeUpdate(BaseModel):
     role: str | None = None
 
 
+class EmployeeInspectionRead(BaseModel):
+    id: int
+    equipment_id: int
+    employee_id: int
+    temperature: float
+    pressure: float
+    vibration: float
+    score: int = Field(ge=0, le=100)
+    timestamp: datetime
+    photo_url: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class EmployeeRead(EmployeeBase):
     id: int
-    inspection_ids: list[int] = Field(default_factory=list)
+    inspections: list[EmployeeInspectionRead] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)

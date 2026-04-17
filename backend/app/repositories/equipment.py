@@ -49,11 +49,7 @@ class EquipmentRepository:
         await self.session.commit()
         return True
 
-    async def get_inspection_ids(self, equipment_id: int) -> list[int]:
-        statement = (
-            select(Inspection.id)
-            .where(Inspection.equipment_id == equipment_id)
-            .order_by(Inspection.id)
-        )
+    async def get_inspections(self, equipment_id: int) -> list[Inspection]:
+        statement = select(Inspection).where(Inspection.equipment_id == equipment_id).order_by(Inspection.id)
         result = await self.session.exec(statement)
         return list(result.all())

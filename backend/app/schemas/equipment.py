@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -22,8 +23,22 @@ class EquipmentUpdate(BaseModel):
     status: EquipmentStatus | None = None
 
 
+class EquipmentInspectionRead(BaseModel):
+    id: int
+    equipment_id: int
+    employee_id: int
+    temperature: float
+    pressure: float
+    vibration: float
+    score: int = Field(ge=0, le=100)
+    timestamp: datetime
+    photo_url: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class EquipmentRead(EquipmentBase):
     id: int
-    inspection_ids: list[int] = Field(default_factory=list)
+    inspections: list[EquipmentInspectionRead] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)

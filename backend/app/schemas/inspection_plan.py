@@ -22,8 +22,17 @@ class InspectionPlanUpdate(BaseModel):
     equipment_ids: list[int] | None = None
 
 
+class InspectionPlanEquipmentRead(BaseModel):
+    id: int
+    name: str
+    description: str | None = None
+    status: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class InspectionPlanRead(InspectionPlanBase):
     id: int
-    equipment_ids: list[int]
+    equipment_items: list[InspectionPlanEquipmentRead]
 
     model_config = ConfigDict(from_attributes=True)
