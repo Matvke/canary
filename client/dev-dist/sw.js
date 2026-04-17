@@ -82,7 +82,7 @@ define(['./workbox-61ed15f7'], (function (workbox) { 'use strict';
    */
   workbox.precacheAndRoute([{
     "url": "/index.html",
-    "revision": "0.k6b7fav33p"
+    "revision": "0.2t41ke6oa28"
   }], {});
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("/index.html"), {
@@ -98,7 +98,7 @@ define(['./workbox-61ed15f7'], (function (workbox) { 'use strict';
   workbox.registerRoute(({
     url,
     request
-  }) => request.method === "GET" && (url.pathname.includes("/inspection-plans/today") || url.pathname.includes("/api/v1/inspection-plans/") || url.pathname.includes("/equipment/") || url.pathname.includes("/api/v1/equipment/")), new workbox.NetworkFirst({
+  }) => request.method === "GET" && (url.pathname.includes("/api/v1/inspection-plans/today/") || url.pathname.includes("/api/v1/inspection-plans/") || url.pathname.includes("/equipment/") || url.pathname.includes("/api/v1/equipment/")), new workbox.NetworkFirst({
     "cacheName": "api-read-model",
     "networkTimeoutSeconds": 4,
     plugins: []

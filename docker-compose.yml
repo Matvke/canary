@@ -1,0 +1,33 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: canary-backend
+    environment:
+      APP_NAME: Factory Inspection Reporting API
+      API_V1_PREFIX: /api/v1
+      DATABASE_URL: sqlite+aiosqlite:////data/factory_reports.db
+      CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:8080","http://127.0.0.1:8080","http://localhost:5173","http://127.0.0.1:5173"]}
+    ports:
+      - "8000:8000"
+    volumes:
+      - backend-data:/data
+      - backend-uploads:/app/uploads
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./client
+    container_name: canary-frontend
+    environment:
+      API_BASE_URL: ${API_BASE_URL:-http://localhost:8000/api/v1}
+    ports:
+      - "8080:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  backend-data:
+  backend-uploads:

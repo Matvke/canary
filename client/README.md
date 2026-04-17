@@ -10,11 +10,11 @@
 docker build -t canary-client .
 ```
 
-Запуск против backend на этой же машине:
+Запуск против backend на этой же машине, если backend API доступен с префиксом `/api/v1`:
 
 ```bash
 docker run --rm -p 8080:8080 \
-  -e API_BASE_URL=http://localhost:8000 \
+  -e API_BASE_URL=http://localhost:8000/api/v1 \
   canary-client
 ```
 
@@ -28,7 +28,7 @@ http://localhost:8080
 
 ```bash
 docker run --rm -p 8080:8080 \
-  -e API_BASE_URL=http://192.168.1.20:8000 \
+  -e API_BASE_URL=http://192.168.1.20:8000/api/v1 \
   canary-client
 ```
 
@@ -58,7 +58,7 @@ POST /upload-photo
 
 ```bash
 npm install --legacy-peer-deps
-VITE_API_BASE_URL=http://localhost:8000 npm run dev
+VITE_API_BASE_URL=http://localhost:8000/api/v1 npm run dev
 ```
 
 Проверки:
