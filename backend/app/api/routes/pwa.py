@@ -31,7 +31,9 @@ router = APIRouter()
 uploads_dir = Path(__file__).resolve().parents[3] / "uploads"
 
 
-def get_plan_service(session: AsyncSession = Depends(get_db_session)) -> InspectionPlanService:
+def get_plan_service(
+    session: AsyncSession = Depends(get_db_session),
+) -> InspectionPlanService:
     return InspectionPlanService(
         plan_repository=InspectionPlanRepository(session),
         equipment_repository=EquipmentRepository(session),
@@ -105,7 +107,9 @@ def _get_checklist_template(template_id: str) -> InspectionPlanChecklist:
                     required=True,
                     options=[
                         InspectionPlanChecklistOption(value="ok", label="Норма"),
-                        InspectionPlanChecklistOption(value="low", label="Низкий уровень"),
+                        InspectionPlanChecklistOption(
+                            value="low", label="Низкий уровень"
+                        ),
                     ],
                 ),
                 InspectionPlanChecklistItem(
@@ -156,7 +160,7 @@ def _get_checklist_template(template_id: str) -> InspectionPlanChecklist:
     )
 
 
-@router.get("/inspection-plans/today", response_model=InspectionPlanTodayResponse)
+@router.get("/inspection-plans/today/", response_model=InspectionPlanTodayResponse)
 async def get_today_plan(
     employee_id: int = 1,
     service: InspectionPlanService = Depends(get_plan_service),
@@ -211,11 +215,15 @@ async def upload_photo(
     idempotency_key = photo_id or f"{draft_id}:{file.filename}"
     existing = (
         await session.exec(
-            select(UploadedPhoto).where(UploadedPhoto.idempotency_key == idempotency_key)
+            select(UploadedPhoto).where(
+                UploadedPhoto.idempotency_key == idempotency_key
+            )
         )
     ).first()
     if existing:
-        return UploadPhotoResponse(id=f"photo-{existing.id}", url=existing.url, photo_url=existing.url)
+        return UploadPhotoResponse(
+            id=f"photo-{existing.id}", url=existing.url, photo_url=existing.url
+        )
 
     uploads_dir.mkdir(parents=True, exist_ok=True)
     extension = Path(file.filename or "").suffix or ".jpg"
@@ -241,11 +249,15 @@ async def upload_photo(
         await session.rollback()
         existing = (
             await session.exec(
-                select(UploadedPhoto).where(UploadedPhoto.idempotency_key == idempotency_key)
+                select(UploadedPhoto).where(
+                    UploadedPhoto.idempotency_key == idempotency_key
+                )
             )
         ).first()
         if existing:
-            return UploadPhotoResponse(id=f"photo-{existing.id}", url=existing.url, photo_url=existing.url)
+            return UploadPhotoResponse(
+                id=f"photo-{existing.id}", url=existing.url, photo_url=existing.url
+            )
         raise
 
     await session.refresh(created)
@@ -258,7 +270,11 @@ async def submit_inspection_result(
     session: AsyncSession = Depends(get_db_session),
 ) -> InspectionResultSubmitResponse:
     existing = (
-        await session.exec(select(InspectionResult).where(InspectionResult.local_id == payload.local_id))
+        await session.exec(
+            select(InspectionResult).where(
+                InspectionResult.local_id == payload.local_id
+            )
+        )
     ).first()
     if existing:
         return InspectionResultSubmitResponse(
@@ -332,7 +348,11 @@ async def submit_inspection_result(
     except IntegrityError:
         await session.rollback()
         existing = (
-            await session.exec(select(InspectionResult).where(InspectionResult.local_id == payload.local_id))
+            await session.exec(
+                select(InspectionResult).where(
+                    InspectionResult.local_id == payload.local_id
+                )
+            )
         ).first()
         if existing:
             return InspectionResultSubmitResponse(
