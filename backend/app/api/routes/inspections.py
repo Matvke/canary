@@ -1,4 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from pathlib import Path
+
+from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response, status
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.deps import get_db_session
@@ -10,6 +14,7 @@ from app.services.errors import ServiceError
 from app.services.inspection import InspectionService
 
 router = APIRouter()
+templates = Jinja2Templates(directory=str(Path(__file__).resolve().parents[2] / "templates"))
 
 
 def get_service(session: AsyncSession = Depends(get_db_session)) -> InspectionService:
@@ -20,9 +25,44 @@ def get_service(session: AsyncSession = Depends(get_db_session)) -> InspectionSe
     )
 
 
+async def get_inspection_payload(
+    request: Request,
+    equipment_id: int | None = Form(default=None),
+    employee_id: int | None = Form(default=None),
+    temperature: float | None = Form(default=None),
+    pressure: float | None = Form(default=None),
+    vibration: float | None = Form(default=None),
+    score: int | None = Form(default=None),
+    photo_url: str | None = Form(default=None),
+) -> InspectionCreate:
+    content_type = request.headers.get("content-type", "")
+    if content_type.startswith("application/json"):
+        body = await request.json()
+        return InspectionCreate.model_validate(body)
+
+    return InspectionCreate(
+        equipment_id=equipment_id,
+        employee_id=employee_id,
+        temperature=temperature,
+        pressure=pressure,
+        vibration=vibration,
+        score=score,
+        photo_url=photo_url,
+    )
+
+
+@router.get("/create", response_class=HTMLResponse)
+async def create_inspection_form(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(
+        request=request,
+        name="inspection_create.html",
+        context={},
+    )
+
+
 @router.post("/", response_model=InspectionRead, status_code=status.HTTP_201_CREATED)
 async def create_inspection(
-    payload: InspectionCreate,
+    payload: InspectionCreate = Depends(get_inspection_payload),
     service: InspectionService = Depends(get_service),
 ) -> InspectionRead:
     try:

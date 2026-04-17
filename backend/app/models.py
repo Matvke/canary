@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+from sqlalchemy.orm import relationship
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -20,13 +21,19 @@ class Equipment(SQLModel, table=True):
     description: str | None = None
     status: str = Field(default="operational")
 
-    inspections: list["Inspection"] = Relationship(
-        back_populates="equipment",
-        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    inspections: list[Inspection] = Relationship(
+        sa_relationship=relationship(
+            "Inspection",
+            back_populates="equipment",
+            cascade="all, delete-orphan",
+        )
     )
-    inspection_plans: list["InspectionPlan"] = Relationship(
-        back_populates="equipment_items",
-        link_model=InspectionPlanEquipmentLink,
+    inspection_plans: list[InspectionPlan] = Relationship(
+        sa_relationship=relationship(
+            "InspectionPlan",
+            back_populates="equipment_items",
+            secondary="inspection_plan_equipment",
+        )
     )
 
 
@@ -37,9 +44,12 @@ class Employee(SQLModel, table=True):
     name: str
     role: str
 
-    inspections: list["Inspection"] = Relationship(
-        back_populates="employee",
-        sa_relationship_kwargs={"cascade": "all, delete-orphan"},
+    inspections: list[Inspection] = Relationship(
+        sa_relationship=relationship(
+            "Inspection",
+            back_populates="employee",
+            cascade="all, delete-orphan",
+        )
     )
 
 
@@ -56,8 +66,12 @@ class Inspection(SQLModel, table=True):
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     photo_url: str | None = None
 
-    equipment: Equipment = Relationship(back_populates="inspections")
-    employee: Employee = Relationship(back_populates="inspections")
+    equipment: Equipment = Relationship(
+        sa_relationship=relationship("Equipment", back_populates="inspections")
+    )
+    employee: Employee = Relationship(
+        sa_relationship=relationship("Employee", back_populates="inspections")
+    )
 
 
 class InspectionPlan(SQLModel, table=True):
@@ -70,6 +84,9 @@ class InspectionPlan(SQLModel, table=True):
     supervisor_follow_up: bool = Field(default=False)
 
     equipment_items: list[Equipment] = Relationship(
-        back_populates="inspection_plans",
-        link_model=InspectionPlanEquipmentLink,
+        sa_relationship=relationship(
+            "Equipment",
+            back_populates="inspection_plans",
+            secondary="inspection_plan_equipment",
+        )
     )
