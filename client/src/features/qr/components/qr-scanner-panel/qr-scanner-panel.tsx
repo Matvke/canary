@@ -1,5 +1,6 @@
 import './qr-scanner-panel.css'
 
+import jsQR from 'jsqr'
 import { Camera, ScanLine, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
@@ -14,6 +15,7 @@ interface QrScannerPanelProps {
 
 export function QrScannerPanel({ expectedCode, onClose, onDetected }: QrScannerPanelProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null)
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const [manualCode, setManualCode] = useState('')
   const [error, setError] = useState('')
@@ -48,20 +50,38 @@ export function QrScannerPanel({ expectedCode, onClose, onDetected }: QrScannerP
         setActive(true)
 
         const BarcodeDetector = window.BarcodeDetector
-        if (!BarcodeDetector) {
-          setError('Сканирование не поддерживается браузером. Введите QR вручную.')
-          return
-        }
-
-        const detector = new BarcodeDetector({ formats: ['qr_code'] })
         const scan = async () => {
           if (cancelled || !videoRef.current) {
             return
           }
 
           try {
-            const codes = await detector.detect(videoRef.current)
-            const code = codes[0]?.rawValue?.trim()
+            let code: string | undefined
+
+            if (BarcodeDetector) {
+              const detector = new BarcodeDetector({ formats: ['qr_code'] })
+              const codes = await detector.detect(videoRef.current)
+              code = codes[0]?.rawValue?.trim()
+            } else if (canvasRef.current) {
+              const canvas = canvasRef.current
+              const video = videoRef.current
+              const width = video.videoWidth
+              const height = video.videoHeight
+
+              if (width > 0 && height > 0) {
+                canvas.width = width
+                canvas.height = height
+
+                const context = canvas.getContext('2d', { willReadFrequently: true })
+                if (context) {
+                  context.drawImage(video, 0, 0, width, height)
+                  const image = context.getImageData(0, 0, width, height)
+                  const result = jsQR(image.data, width, height)
+                  code = result?.data?.trim()
+                }
+              }
+            }
+
             if (code) {
               await onDetected(code)
               onClose()
@@ -120,6 +140,7 @@ export function QrScannerPanel({ expectedCode, onClose, onDetected }: QrScannerP
 
       <div className="relative overflow-hidden rounded-[1.75rem] border border-white/10 bg-black">
         <video ref={videoRef} muted playsInline className="aspect-square w-full object-cover" />
+        <canvas ref={canvasRef} className="hidden" />
         <div className="pointer-events-none absolute inset-0 border-[1.5px] border-white/10">
           <div className="scanner-frame absolute inset-6 rounded-[1.5rem] border-2 border-amber-300/80" />
         </div>
