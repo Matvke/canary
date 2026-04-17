@@ -54,7 +54,7 @@ export default defineConfig({
           },
           {
             urlPattern: ({ url, request }) => request.method === 'GET' && (
-              url.pathname.includes('/inspection-plans/today/')
+              url.pathname.includes('/api/v1/inspection-plans/today/')
               || url.pathname.includes('/api/v1/inspection-plans/')
               || url.pathname.includes('/equipment/')
               || url.pathname.includes('/api/v1/equipment/')
