@@ -201,7 +201,7 @@ function normalizeTodayPlanBundle(payload: unknown): RemotePlanBundle {
 }
 
 export async function fetchTodayPlan(): Promise<RemotePlanBundle> {
-  return normalizeTodayPlanBundle(await requestJson<unknown>('/api/v1/inspection-plans/today/'))
+  return normalizeTodayPlanBundle(await requestJson<unknown>('/inspection-plans/today/'))
 }
 
 function modernInspectionPayload(draft: InspectionDraft, equipment: EquipmentRecord) {
@@ -260,7 +260,7 @@ export async function submitInspection(
   draft: InspectionDraft,
   equipment: EquipmentRecord,
 ): Promise<{ serverId?: string }> {
-  const response = await requestResponse('/api/v1/inspection-results', {
+  const response = await requestResponse('/inspection-results', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(modernInspectionPayload(draft, equipment)),
