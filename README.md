@@ -36,15 +36,15 @@ API_BASE_URL=http://localhost:8000/api/v1
 Если проверяете приложение с телефона в той же Wi-Fi сети, используйте IP ноутбука:
 
 ```bash
-API_BASE_URL=http://192.168.1.20:8000/api/v1 \
-CORS_ORIGINS='["http://localhost:8080","http://127.0.0.1:8080","http://192.168.1.20:8080"]' \
+API_BASE_URL=http://<LAN_IP>:8000/api/v1 \
+CORS_ORIGINS='["http://localhost:8080","http://127.0.0.1:8080","http://<LAN_IP>:8080"]' \
 docker compose up --build
 ```
 
 После этого на телефоне открывайте:
 
 ```text
-http://192.168.1.20:8080
+http://<LAN_IP>:8080
 ```
 
 Для камеры на телефоне всё равно нужен HTTPS или localhost. Для полноценной проверки QR с телефона используйте HTTPS-туннель до frontend.
