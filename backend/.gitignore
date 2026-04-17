@@ -1,1 +1,56 @@
+# Python bytecode/cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Packaging/build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
 lib/
+lib64/
+wheels/
+*.egg
+MANIFEST
+
+# Test/type/lint caches
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.tox/
+.nox/
+
+# Local databases and generated files
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.sqlite-journal
+*.sqlite3-journal
+!app/factory_reports.db
+
+# Runtime media
+uploads/
+
+# Python/package manager local state
+.pdm-python
+.pdm-build/
+.pixi/
+__pypackages__/
+
+# Logs and local config
+*.log
+.env
+.env.*
+!.env.example
