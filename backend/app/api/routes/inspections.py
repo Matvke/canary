@@ -1,8 +1,10 @@
 from pathlib import Path
+from uuid import uuid4
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from starlette.datastructures import UploadFile
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.deps import get_db_session
@@ -17,6 +19,7 @@ router = APIRouter()
 templates = Jinja2Templates(
     directory=str(Path(__file__).resolve().parents[2] / "templates")
 )
+uploads_dir = Path(__file__).resolve().parents[3] / "uploads"
 
 
 def get_service(session: AsyncSession = Depends(get_db_session)) -> InspectionService:
@@ -29,28 +32,38 @@ def get_service(session: AsyncSession = Depends(get_db_session)) -> InspectionSe
 
 async def get_inspection_payload(
     request: Request,
-    equipment_id: int | None = Form(default=None),
-    employee_id: int | None = Form(default=None),
-    temperature: float | None = Form(default=None),
-    pressure: float | None = Form(default=None),
-    vibration: float | None = Form(default=None),
-    score: int | None = Form(default=None),
-    photo_url: str | None = Form(default=None),
 ) -> InspectionCreate:
     content_type = request.headers.get("content-type", "")
     if content_type.startswith("application/json"):
         body = await request.json()
         return InspectionCreate.model_validate(body)
 
-    return InspectionCreate(
-        equipment_id=equipment_id,
-        employee_id=employee_id,
-        temperature=temperature,
-        pressure=pressure,
-        vibration=vibration,
-        score=score,
-        photo_url=photo_url,
-    )
+    form = await request.form()
+    photo_url = form.get("photo_url")
+    photo_file = form.get("photo")
+
+    if isinstance(photo_file, UploadFile) and photo_file.filename:
+        if not (photo_file.content_type or "").startswith("image/"):
+            raise HTTPException(status_code=400, detail="Uploaded file must be an image")
+
+        uploads_dir.mkdir(parents=True, exist_ok=True)
+        extension = Path(photo_file.filename).suffix or ".jpg"
+        filename = f"{uuid4().hex}{extension}"
+        file_path = uploads_dir / filename
+        file_path.write_bytes(await photo_file.read())
+        await photo_file.close()
+        photo_url = f"/uploads/{filename}"
+
+    payload = {
+        "equipment_id": form.get("equipment_id"),
+        "employee_id": form.get("employee_id"),
+        "temperature": form.get("temperature"),
+        "pressure": form.get("pressure"),
+        "vibration": form.get("vibration"),
+        "score": form.get("score"),
+        "photo_url": photo_url or None,
+    }
+    return InspectionCreate.model_validate(payload)
 
 
 @router.get("/form", response_class=HTMLResponse)
