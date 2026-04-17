@@ -260,7 +260,7 @@ export async function submitInspection(
   draft: InspectionDraft,
   equipment: EquipmentRecord,
 ): Promise<{ serverId?: string }> {
-  const response = await requestResponse('/inspection-results', {
+  const response = await requestResponse('/api/v1/inspection-results', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(modernInspectionPayload(draft, equipment)),
